@@ -46,8 +46,9 @@ def main():
         for two_letter_combo in two_letter_combos[0:1]:
             make_search_query(browser, two_letter_combo)
 
-            logger.info("scrape the page...")
-            print(scrape_page(browser))
+            logger.info("scrape the page for {0}...".format(two_letter_combo))
+            if (not empty_page(browser)):
+                print(scrape_page(browser))
 
             logger.info("sleep a bit...")
             sleep(random()*4)
@@ -118,7 +119,7 @@ def make_search_query(browser, two_letter_combo_start):
 
 def scrape_page(browser):
     """
-    Uses Xpath to scrape the page and get each case data
+    Scrapes the page and get each case data
     :param browser: Selenium driver
     :return: array of case objects
     """
@@ -155,7 +156,7 @@ def scrape_page(browser):
 
 def scrape_inner_page(browser):
     """
-    Uses Xpath to get the charge data for each case
+    Gets the charge data for each case
     :param browser: Selenium driver
     :return: array of charge objects
     """
@@ -187,12 +188,32 @@ def scrape_inner_page(browser):
     return charges_list
 
 
+def empty_page(browser):
+    """
+    Checks if there are results
+    :param browser: Selenium driver
+    :return: True or False
+    """
+    table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphSearchResults_gridSearch']")
+    rows = table.find_elements_by_xpath(".//tbody/tr")
+    if (len(rows) == 1):
+        logger.info("no results found...")
+        return True
+
+    return False
+
+
+def next_page(browser):
+    return None
+
+
 def implement_new_user_agent():
     new_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36" #user_agent.random
     logger.info("new user agent is: {0}".format(new_user_agent))
     options.add_argument(f'User-Agent={new_user_agent}')
     browser = webdriver.Chrome(chrome_options=options, executable_path='/usr/local/bin/chromedriver')
     return browser
+
 
 if __name__ == "__main__":
     main()
