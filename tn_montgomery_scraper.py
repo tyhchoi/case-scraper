@@ -41,27 +41,40 @@ def main():
     two_letter_combos = create_list_of_search_engine_queries()
 
     with open('sc_case_details.csv', mode='w') as sc_case_details:
-        writer_object = csv.writer(sc_case_details)
+        fieldnames = ['Name', 'Role', 'Case Number', 'Filing Date', 'Status', 'Status Date', 'TCA Code', 'TCA Desc', 'Violation Date', 'Disposition Date', 'Disposition Type']
+        writer_object = csv.DictWriter(sc_case_details, fieldnames=fieldnames)
 
         logger.info("loop through all items in two_letter_combos...")
         for two_letter_combo in two_letter_combos[0:1]:
+            total_cases = []
             make_search_query(browser, two_letter_combo)
 
             logger.info("scrape the page for {0}...".format(two_letter_combo))
             if (not empty_page(browser)):
                 while True:
-                    scrape_page(browser)
+                    cases = scrape_page(browser)
+                    total_cases += cases
                     try:
                         next_page(browser)
                     except NoSuchElementException:
                         logger.info("end of results...")
                         break
 
+            logger.info("writing cases for {0} to csv...".format(two_letter_combo))
+            writer_object.writeheader()
+            for case in total_cases:
+                charges = case['Charges']
+                for charge in charges:
+                    new_case = case.copy()
+                    new_case.update(charge)
+                    del new_case['Charges']
+                    writer_object.writerow(new_case)
+
             logger.info("sleep a bit...")
             sleep(random()*4)
 
-            logger.info("quit browser...")
-            browser.quit()
+        logger.info("quit browser...")
+        browser.quit()
 
 
 def navigate_to_court_records_search_engine(browser, actions):
