@@ -48,29 +48,26 @@ def main():
         case_number_set = set()
 
         logger.info("loop through all items in two_letter_combos...")
-        for two_letter_combo in two_letter_combos:
-            total_cases = []
+        for two_letter_combo in two_letter_combos[0:1]:
             make_search_query(browser, two_letter_combo)
 
             logger.info("scrape the page for {0}...".format(two_letter_combo))
             if (not empty_page(browser)):
                 while True:
                     cases = scrape_page(browser, case_number_set)
-                    total_cases += cases
+                    logger.info("writing cases for this page to csv...")
+                    for case in cases:
+                        charges = case['Charges']
+                        for charge in charges:
+                            new_case = case.copy()
+                            new_case.update(charge)
+                            del new_case['Charges']
+                            writer_object.writerow(new_case)
                     try:
                         next_page(browser)
                     except NoSuchElementException:
                         logger.info("end of results...")
                         break
-
-            logger.info("writing cases for {0} to csv...".format(two_letter_combo))
-            for case in total_cases:
-                charges = case['Charges']
-                for charge in charges:
-                    new_case = case.copy()
-                    new_case.update(charge)
-                    del new_case['Charges']
-                    writer_object.writerow(new_case)
 
             logger.info("sleep a bit...")
             sleep(random()*4)
