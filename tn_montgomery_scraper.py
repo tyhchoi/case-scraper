@@ -46,7 +46,7 @@ def main():
         for two_letter_combo in two_letter_combos[0:1]:
             make_search_query(browser, two_letter_combo)
 
-            logger.info("scrape the page")
+            logger.info("scrape the page...")
             print(scrape_page(browser))
 
             logger.info("sleep a bit...")
@@ -97,12 +97,11 @@ def create_list_of_search_engine_queries():
 
 def make_search_query(browser, two_letter_combo_start):
     """
-
+    Sends a search query using 2 letter combinations
     :param browser: chrome driver
     :param two_letter_combo_start: 2 letter combination for search query
     :return: None
     """
-
     logger.info("find last name text box input...")
     last_name_text_box = browser.find_element_by_name('ctl00$ctl00$cphContent$cphSelectionCriteria$txtPartyLastName')
     logger.info("type in the value {0} into the last name text box input".format(two_letter_combo_start))
@@ -118,18 +117,25 @@ def make_search_query(browser, two_letter_combo_start):
 
 
 def scrape_page(browser):
+    """
+    Uses Xpath to scrape the page and get each case data
+    :param browser: Selenium driver
+    :return: array of case objects
+    """
     table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphSearchResults_gridSearch']")
     rows = table.find_elements_by_xpath(".//tbody/tr[not(contains(@class,'searchListHeader'))]")
     case_list = []
     for row in rows:
         link = row.find_element_by_xpath('.//td[2]/a')
         name = link.get_attribute('text')
+        logger.info("get data for {0}".format(name))
         role = row.find_element_by_xpath('.//td[3]').get_attribute('innerHTML')
         case_number = row.find_element_by_xpath('.//td[4]').get_attribute('innerHTML')
         filing_date = row.find_element_by_xpath('.//td[6]').get_attribute('innerHTML')
         status = row.find_element_by_xpath('.//td[7]').get_attribute('innerHTML')
         status_date = row.find_element_by_xpath('.//td[8]').get_attribute('innerHTML')
 
+        logger.info("switch tab for charges...")
         ActionChains(browser).key_down(Keys.COMMAND).click(link).key_up(Keys.COMMAND).perform()
         browser.switch_to.window(browser.window_handles[1])
         charges_list = scrape_inner_page(browser)
@@ -148,6 +154,11 @@ def scrape_page(browser):
 
 
 def scrape_inner_page(browser):
+    """
+    Uses Xpath to get the charge data for each case
+    :param browser: Selenium driver
+    :return: array of charge objects
+    """
     charges_tab = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphTabbedBar_ultab']/li[2]/a")
     charges_tab.click()
     sleep(sleep_seconds + (2 * random()))
@@ -155,6 +166,7 @@ def scrape_inner_page(browser):
     rows = table.find_elements_by_xpath(".//tbody/tr[not(contains(@class,'searchListHeader'))]")
     charges_list = []
     for row in rows:
+        logger.info("get data for every charge...")
         tca_code = row.find_element_by_xpath('.//td[3]').get_attribute('innerHTML')
         tca_desc = row.find_element_by_xpath('.//td[4]').get_attribute('innerHTML')
         violation_date = row.find_element_by_xpath('.//td[6]').get_attribute('innerHTML')
@@ -169,6 +181,7 @@ def scrape_inner_page(browser):
             }
         charges_list.append(charges)
 
+    logger.info("close tab and switch back...")
     browser.close()
     browser.switch_to.window(browser.window_handles[0])
     return charges_list
