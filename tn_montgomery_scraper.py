@@ -43,16 +43,19 @@ def main():
     with open('sc_case_details.csv', mode='w') as sc_case_details:
         fieldnames = ['Name', 'Role', 'Case Number', 'Filing Date', 'Status', 'Status Date', 'TCA Code', 'TCA Desc', 'Violation Date', 'Disposition Date', 'Disposition Type']
         writer_object = csv.DictWriter(sc_case_details, fieldnames=fieldnames)
+        writer_object.writeheader()
+
+        case_number_set = set()
 
         logger.info("loop through all items in two_letter_combos...")
-        for two_letter_combo in two_letter_combos[0:1]:
+        for two_letter_combo in two_letter_combos:
             total_cases = []
             make_search_query(browser, two_letter_combo)
 
             logger.info("scrape the page for {0}...".format(two_letter_combo))
             if (not empty_page(browser)):
                 while True:
-                    cases = scrape_page(browser)
+                    cases = scrape_page(browser, case_number_set)
                     total_cases += cases
                     try:
                         next_page(browser)
@@ -61,7 +64,6 @@ def main():
                         break
 
             logger.info("writing cases for {0} to csv...".format(two_letter_combo))
-            writer_object.writeheader()
             for case in total_cases:
                 charges = case['Charges']
                 for charge in charges:
@@ -138,7 +140,7 @@ def make_search_query(browser, two_letter_combo_start):
     return None
 
 
-def scrape_page(browser):
+def scrape_page(browser, case_number_set):
     """
     Scrapes the page and get each case data
     :param browser: Selenium driver
@@ -158,20 +160,25 @@ def scrape_page(browser):
         status_date = row.find_element_by_xpath('.//td[8]').get_attribute('innerHTML')
 
         if role == 'Defendant':
-            logger.info("switch tab for charges...")
-            ActionChains(browser).key_down(Keys.COMMAND).click(link).key_up(Keys.COMMAND).perform()
-            browser.switch_to.window(browser.window_handles[1])
-            charges_list = scrape_inner_page(browser)
-            case = {
-                'Name': name,
-                'Role': role,
-                'Case Number': case_number,
-                'Filing Date': filing_date,
-                'Status': status,
-                'Status Date': status_date,
-                'Charges': charges_list
-            }
-            case_list.append(case)
+            duplicate = case_number in case_number_set
+            logger.info("check if case number is a duplicate...")
+            if not duplicate:
+                logger.info("case number is not a duplicate...")
+                case_number_set.add(case_number)
+                logger.info("switch tab for charges...")
+                ActionChains(browser).key_down(Keys.COMMAND).click(link).key_up(Keys.COMMAND).perform()
+                browser.switch_to.window(browser.window_handles[1])
+                charges_list = scrape_inner_page(browser)
+                case = {
+                    'Name': name,
+                    'Role': role,
+                    'Case Number': case_number,
+                    'Filing Date': filing_date,
+                    'Status': status,
+                    'Status Date': status_date,
+                    'Charges': charges_list
+                }
+                case_list.append(case)
 
     return case_list
 
@@ -184,7 +191,7 @@ def scrape_inner_page(browser):
     """
     charges_tab = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphTabbedBar_ultab']/li[2]/a")
     charges_tab.click()
-    sleep(sleep_seconds + (4 * random()))
+    sleep(2)
     table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphFormDetail_gridcharges']")
     rows = table.find_elements_by_xpath(".//tbody/tr[not(contains(@class,'searchListHeader'))]")
     charges_list = []
