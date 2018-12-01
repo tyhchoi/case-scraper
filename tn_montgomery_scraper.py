@@ -156,20 +156,21 @@ def scrape_page(browser):
         status = row.find_element_by_xpath('.//td[7]').get_attribute('innerHTML')
         status_date = row.find_element_by_xpath('.//td[8]').get_attribute('innerHTML')
 
-        logger.info("switch tab for charges...")
-        ActionChains(browser).key_down(Keys.COMMAND).click(link).key_up(Keys.COMMAND).perform()
-        browser.switch_to.window(browser.window_handles[1])
-        charges_list = scrape_inner_page(browser)
-        case = {
-            'Name': name,
-            'Role': role,
-            'Case Number': case_number,
-            'Filing Date': filing_date,
-            'Status': status,
-            'Status Date': status_date,
-            'Charges': charges_list
-        }
-        case_list.append(case)
+        if role == 'Defendant':
+            logger.info("switch tab for charges...")
+            ActionChains(browser).key_down(Keys.COMMAND).click(link).key_up(Keys.COMMAND).perform()
+            browser.switch_to.window(browser.window_handles[1])
+            charges_list = scrape_inner_page(browser)
+            case = {
+                'Name': name,
+                'Role': role,
+                'Case Number': case_number,
+                'Filing Date': filing_date,
+                'Status': status,
+                'Status Date': status_date,
+                'Charges': charges_list
+            }
+            case_list.append(case)
 
     return case_list
 
@@ -182,7 +183,7 @@ def scrape_inner_page(browser):
     """
     charges_tab = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphTabbedBar_ultab']/li[2]/a")
     charges_tab.click()
-    sleep(sleep_seconds + (2 * random()))
+    sleep(sleep_seconds + (4 * random()))
     table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphFormDetail_gridcharges']")
     rows = table.find_elements_by_xpath(".//tbody/tr[not(contains(@class,'searchListHeader'))]")
     charges_list = []
