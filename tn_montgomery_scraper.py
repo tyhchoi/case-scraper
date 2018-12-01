@@ -7,6 +7,7 @@ from random import random
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+from selenium.common.exceptions import NoSuchElementException
 
 from fake_useragent import UserAgent
 
@@ -48,7 +49,13 @@ def main():
 
             logger.info("scrape the page for {0}...".format(two_letter_combo))
             if (not empty_page(browser)):
-                print(scrape_page(browser))
+                while True:
+                    scrape_page(browser)
+                    try:
+                        next_page(browser)
+                    except NoSuchElementException:
+                        logger.info("end of results...")
+                        break
 
             logger.info("sleep a bit...")
             sleep(random()*4)
@@ -204,6 +211,9 @@ def empty_page(browser):
 
 
 def next_page(browser):
+    logger.info("go to the next page...")
+    next_page = browser.find_element_by_name('ctl00$ctl00$cphContent$cphContentPaging$nextpage')
+    next_page.click()
     return None
 
 
