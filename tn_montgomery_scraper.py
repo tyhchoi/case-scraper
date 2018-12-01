@@ -6,6 +6,7 @@ import csv
 from random import random
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 from fake_useragent import UserAgent
 
@@ -21,7 +22,7 @@ user_agent = UserAgent()
 use this sleep so you see visually see the changes in the browser as it's automated; you can set it to 0 to run
 the script as fast as possible
 """
-sleep_seconds = 4
+sleep_seconds = 0
 
 
 def main():
@@ -44,6 +45,9 @@ def main():
         logger.info("loop through all items in two_letter_combos...")
         for two_letter_combo in two_letter_combos[0:1]:
             make_search_query(browser, two_letter_combo)
+
+            logger.info("scrape the page")
+            print(scrape_page(browser))
 
             logger.info("sleep a bit...")
             sleep(random()*4)
@@ -113,11 +117,68 @@ def make_search_query(browser, two_letter_combo_start):
     return None
 
 
+def scrape_page(browser):
+    table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphSearchResults_gridSearch']")
+    rows = table.find_elements_by_xpath(".//tbody/tr[not(contains(@class,'searchListHeader'))]")
+    case_list = []
+    for row in rows:
+        link = row.find_element_by_xpath('.//td[2]/a')
+        name = link.get_attribute('text')
+        role = row.find_element_by_xpath('.//td[3]').get_attribute('innerHTML')
+        case_number = row.find_element_by_xpath('.//td[4]').get_attribute('innerHTML')
+        filing_date = row.find_element_by_xpath('.//td[6]').get_attribute('innerHTML')
+        status = row.find_element_by_xpath('.//td[7]').get_attribute('innerHTML')
+        status_date = row.find_element_by_xpath('.//td[8]').get_attribute('innerHTML')
+
+        ActionChains(browser).key_down(Keys.COMMAND).click(link).key_up(Keys.COMMAND).perform()
+        browser.switch_to.window(browser.window_handles[1])
+        charges_list = scrape_inner_page(browser)
+        case = {
+            'Name': name,
+            'Role': role,
+            'Case Number': case_number,
+            'Filing Date': filing_date,
+            'Status': status,
+            'Status Date': status_date,
+            'Charges': charges_list
+        }
+        case_list.append(case)
+
+    return case_list
+
+
+def scrape_inner_page(browser):
+    charges_tab = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphTabbedBar_ultab']/li[2]/a")
+    charges_tab.click()
+    sleep(sleep_seconds + (2 * random()))
+    table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphFormDetail_gridcharges']")
+    rows = table.find_elements_by_xpath(".//tbody/tr[not(contains(@class,'searchListHeader'))]")
+    charges_list = []
+    for row in rows:
+        tca_code = row.find_element_by_xpath('.//td[3]').get_attribute('innerHTML')
+        tca_desc = row.find_element_by_xpath('.//td[4]').get_attribute('innerHTML')
+        violation_date = row.find_element_by_xpath('.//td[6]').get_attribute('innerHTML')
+        disposition_date = row.find_element_by_xpath('.//td[7]').get_attribute('innerHTML')
+        disposition_type = row.find_element_by_xpath('.//td[8]').get_attribute('innerHTML')
+        charges = {
+            'TCA Code': tca_code,
+            'TCA Desc': tca_desc,
+            'Violation Date': violation_date,
+            'Disposition Date': disposition_date,
+            'Disposition Type': disposition_type
+            }
+        charges_list.append(charges)
+
+    browser.close()
+    browser.switch_to.window(browser.window_handles[0])
+    return charges_list
+
+
 def implement_new_user_agent():
     new_user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.100 Safari/537.36" #user_agent.random
     logger.info("new user agent is: {0}".format(new_user_agent))
     options.add_argument(f'User-Agent={new_user_agent}')
-    browser = webdriver.Chrome(chrome_options=options, executable_path='../../chromedriver')
+    browser = webdriver.Chrome(chrome_options=options, executable_path='/usr/local/bin/chromedriver')
     return browser
 
 if __name__ == "__main__":
