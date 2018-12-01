@@ -126,6 +126,7 @@ def make_search_query(browser, two_letter_combo_start):
     logger.info("find last name text box input...")
     last_name_text_box = browser.find_element_by_name('ctl00$ctl00$cphContent$cphSelectionCriteria$txtPartyLastName')
     logger.info("type in the value {0} into the last name text box input".format(two_letter_combo_start))
+    last_name_text_box.clear()
     last_name_text_box.send_keys(two_letter_combo_start)
     sleep(sleep_seconds + (2 * random()))
 
