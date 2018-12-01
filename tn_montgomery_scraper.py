@@ -144,6 +144,7 @@ def scrape_page(browser, case_number_set):
     """
     Scrapes the page and get each case data
     :param browser: Selenium driver
+    :param case_number_set: set of case numbers for checking dupes
     :return: array of case objects
     """
     table = browser.find_element_by_xpath("//*[@id='ctl00_ctl00_cphContent_cphSearchResults_gridSearch']")
@@ -233,9 +234,9 @@ def empty_page(browser):
 
 
 def next_page(browser):
-    logger.info("go to the next page...")
     next_page = browser.find_element_by_name('ctl00$ctl00$cphContent$cphContentPaging$nextpage')
     next_page.click()
+    logger.info("go to the next page...")
     return None
 
 
