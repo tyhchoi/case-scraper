@@ -231,6 +231,11 @@ def empty_page(browser):
 
 
 def next_page(browser):
+    """
+    Goes to the next page
+    :param browser: Selenium driver
+    :return: None
+    """
     next_page = browser.find_element_by_name('ctl00$ctl00$cphContent$cphContentPaging$nextpage')
     next_page.click()
     logger.info("go to the next page...")
